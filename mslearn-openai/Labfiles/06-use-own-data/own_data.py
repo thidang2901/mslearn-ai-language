@@ -1,12 +1,13 @@
-import os
 import json
+import os
+
 from dotenv import load_dotenv
 
 # Add OpenAI import
 from openai import AzureOpenAI
 
-def main(): 
-        
+
+def main():
     try:
         # Flag to show citations
         show_citations = False
@@ -19,7 +20,7 @@ def main():
         azure_search_endpoint = os.getenv("AZURE_SEARCH_ENDPOINT")
         azure_search_key = os.getenv("AZURE_SEARCH_KEY")
         azure_search_index = os.getenv("AZURE_SEARCH_INDEX")
-        
+
         # Initialize the Azure OpenAI client
         client = AzureOpenAI(
             base_url=f"{azure_oai_endpoint}/openai/deployments/{azure_oai_deployment}/extensions",
@@ -30,21 +31,30 @@ def main():
         text = input('\nEnter a question:\n')
 
         # Configure your data source
-
+        extension_config = dict(dataSources=[
+            {
+                "type": "AzureCognitiveSearch",
+                "parameters": {
+                    "endpoint": azure_search_endpoint,
+                    "key": azure_search_key,
+                    "indexName": azure_search_index,
+                }
+            }]
+        )
 
         # Send request to Azure OpenAI model
         print("...Sending the following request to Azure OpenAI endpoint...")
         print("Request: " + text + "\n")
 
         response = client.chat.completions.create(
-            model = azure_oai_deployment,
-            temperature = 0.5,
-            max_tokens = 1000,
-            messages = [
+            model=azure_oai_deployment,
+            temperature=0.5,
+            max_tokens=1000,
+            messages=[
                 {"role": "system", "content": "You are a helpful travel agent"},
                 {"role": "user", "content": text}
             ],
-            extra_body = extension_config
+            extra_body=extension_config
         )
 
         # Print response
@@ -58,13 +68,9 @@ def main():
             for c in citation_json["citations"]:
                 print("  Title: " + c['title'] + "\n    URL: " + c['url'])
 
-
-        
     except Exception as ex:
         print(ex)
 
 
-if __name__ == '__main__': 
+if __name__ == '__main__':
     main()
-
-
