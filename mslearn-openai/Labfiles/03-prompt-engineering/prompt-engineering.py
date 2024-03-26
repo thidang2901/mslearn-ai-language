@@ -1,29 +1,36 @@
-import os
 import asyncio
+import os
+
 from dotenv import load_dotenv
 
 # Add Azure OpenAI package
-
+from openai import AsyncAzureOpenAI
 
 # Set to True to print the full response from OpenAI for each call
-printFullResponse = False
+print_full_response = False
 
-async def main(): 
-        
-    try: 
-    
+
+# Exercise: https://microsoftlearning.github.io/mslearn-openai/Instructions/Exercises/03-prompt-engineering.html
+async def main():
+    try:
         # Get configuration settings 
         load_dotenv()
         azure_oai_endpoint = os.getenv("AZURE_OAI_ENDPOINT")
         azure_oai_key = os.getenv("AZURE_OAI_KEY")
         azure_oai_deployment = os.getenv("AZURE_OAI_DEPLOYMENT")
-        
+
         # Configure the Azure OpenAI client
-        
+        client = AsyncAzureOpenAI(
+            azure_endpoint=azure_oai_endpoint,
+            api_key=azure_oai_key,
+            api_version="2024-02-15-preview"
+        )
 
         while True:
             # Pause the app to allow the user to enter the system prompt
-            print("------------------\nPausing the app to allow you to change the system prompt.\nPress anything then enter to continue...")
+            print("""------------------\n
+                Pausing the app to allow you to change the system prompt.\n
+                Press anything then enter to continue...""")
             input()
 
             # Read in system message and prompt for user message
@@ -32,25 +39,39 @@ async def main():
             if user_text.lower() == 'quit' or system_text.lower() == 'quit':
                 print('Exiting program...')
                 break
-            
-            await call_openai_model(system_message = system_text, 
-                                    user_message = user_text, 
-                                    model=azure_oai_deployment, 
+
+            await call_openai_model(system_message=system_text,
+                                    user_message=user_text,
+                                    model=azure_oai_deployment,
                                     client=client
                                     )
 
     except Exception as ex:
         print(ex)
 
+
 async def call_openai_model(system_message, user_message, model, client):
     # Format and send the request to the model
-    
+    messages = [
+        {"role": "system", "content": system_message},
+        {"role": "user", "content": user_message},
+    ]
 
+    print("\nSending request to Azure OpenAI model...\n")
 
-    if printFullResponse:
+    # Call the Azure OpenAI model
+    response = await client.chat.completions.create(
+        model=model,
+        messages=messages,
+        temperature=0.7,
+        max_tokens=800
+    )
+
+    if print_full_response:
         print(response)
 
     print("Response:\n" + response.choices[0].message.content + "\n")
 
-if __name__ == '__main__': 
+
+if __name__ == '__main__':
     asyncio.run(main())
